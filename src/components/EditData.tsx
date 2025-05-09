@@ -1,0 +1,393 @@
+// import { useEffect, useState } from 'react';
+// import { useDispatch } from 'react-redux';
+// import { useFormik } from 'formik';
+// import * as Yup from 'yup'
+// import { updateFormData } from '../formSlice';
+// import { toast, ToastContainer } from 'react-toastify';
+// import { ImCross } from 'react-icons/im';
+// import { useNavigate } from 'react-router-dom';
+
+// const EditForm = () => {
+//     const dispatch = useDispatch();
+//     const [formIndex, setFormIndex] = useState<number | null>(null);
+//     const [fields, setFields] = useState([{ kpi_parameter: '', total_score: '' }]);
+//     // Kpi and totalscore fields errors hanlding
+//     const [fieldErrors, setFieldErrors] = useState<{ kpi_parameter: string; total_score: string }[]>(
+//         [{ kpi_parameter: '', total_score: '' }]
+//     );
+//     const navigate = useNavigate()
+
+//     const handleAddField = () => {
+//         setFields([...fields, { kpi_parameter: "", total_score: "" }]);
+//         setFieldErrors([...fieldErrors, { kpi_parameter: '', total_score: '' }]);
+//     };
+
+//     const handleRemoveField = (index: number) => {
+//         const updatedFields = [...fields];
+//         const updatedErrors = [...fieldErrors];
+//         if (updatedFields.length > 1) {
+//             updatedFields.splice(index, 1);
+//             updatedErrors.splice(index, 1);
+//         }
+//         setFields(updatedFields);
+//         setFieldErrors(updatedErrors);
+//     };
+
+//     const [initialValues, setInitialValues] = useState({
+//         product_group: '',
+//     });
+
+//     useEffect(() => {
+//         const formData = localStorage.getItem('editFormData');
+//         if (formData) {
+//             const { data, index } = JSON.parse(formData);
+//             setInitialValues({ product_group: data.ProductGroup });
+//             setFields(data.Parameters);
+//             setFormIndex(index);
+//         }
+//     }, []);
+
+//     const handleFormSubmit = (formData: any, index: number) => {
+//         const storedForms = JSON.parse(localStorage.getItem('allForms') || '[]');
+//         storedForms[index] = formData;
+//         localStorage.setItem('allForms', JSON.stringify(storedForms));
+//         dispatch(updateFormData({ index, data: formData }));
+//     };
+
+//     const formik = useFormik({
+//         enableReinitialize: true,
+//         initialValues,
+//         validationSchema: Yup.object({
+//             product_group: Yup.string().required('Required'),
+//         }),
+//         onSubmit: (values) => {
+//             const newErrors = fields.map((field) => ({
+//                 kpi_parameter: field.kpi_parameter.trim() === '' ? 'Required' : '',
+//                 total_score: field.total_score.trim() === '' ? 'Required' : '',
+//             }));
+
+//             if (newErrors.some(err => err.kpi_parameter || err.total_score)) {
+//                 setFieldErrors(newErrors);
+//                 return;
+//             }
+//             const updated = {
+//                 ProductGroup: values.product_group,
+//                 Parameters: fields,
+//             };
+//             if (formIndex !== null) {
+//                 handleFormSubmit(updated, formIndex);
+//                 localStorage.removeItem('editFormData');
+//                 toast.warning('Data Updated!')
+//                 setTimeout(() => {
+//                     navigate('/');
+//                 }, 800);
+//             }
+//         },
+//     });
+
+//     return (
+//         <>
+//             <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
+//             <div className='form-container'>
+//                 <h2 className='form-heading'>Edit Quality Check Settings</h2>
+//                 <form onSubmit={formik.handleSubmit}>
+//                     <div className="form-group">
+//                         <label>Product Group</label>
+//                         <input
+//                             type="text"
+//                             id="product_group"
+//                             name="product_group"
+//                             placeholder="Type here.."
+//                             onChange={formik.handleChange}
+//                             value={formik.values.product_group}
+//                         />
+//                         {formik.touched.product_group && formik.errors.product_group && (
+//                             <p className="error-text">{formik.errors.product_group}</p>
+//                         )}
+//                     </div>
+
+//                     {fields.map((item, index) => (
+//                         <div key={index} className="parameter-box">
+//                             <div className="form-group">
+//                                 <label>KPI Parameter: </label>
+//                                 <input
+//                                     type="text"
+//                                     placeholder='Type here...'
+//                                     value={item.kpi_parameter}
+//                                     onChange={(e) => {
+//                                         const updated = [...fields];
+//                                         updated[index].kpi_parameter = e.target.value;
+//                                         setFields(updated);
+//                                         const errorUpdate = [...fieldErrors];
+//                                         errorUpdate[index].kpi_parameter = '';
+//                                         setFieldErrors(errorUpdate);
+//                                     }}
+//                                 />
+//                                 {fieldErrors[index]?.kpi_parameter && (
+//                                     <p style={{ color: 'red' }}>{fieldErrors[index].kpi_parameter}</p>
+//                                 )}
+//                             </div>
+
+//                             <div className="form-group score-input">
+//                                 <label>Total Score: </label>
+//                                 <div className="score-wrapper">
+//                                     <input
+//                                         type="text"
+//                                         value={item.total_score}
+//                                         placeholder='0'
+//                                         maxLength={3}
+//                                         onChange={(e) => {
+//                                             const value = e.target.value;
+//                                             if (/^\d*$/.test(value)) {
+//                                                 const updated = [...fields];
+//                                                 updated[index].total_score = value;
+//                                                 setFields(updated);
+//                                                 const errorUpdate = [...fieldErrors];
+//                                                 errorUpdate[index].total_score = '';
+//                                                 setFieldErrors(errorUpdate);
+//                                             }
+//                                         }}
+//                                     />
+//                                     <span style={{ color: 'gray', marginLeft: '4px' }}>%</span>
+//                                 </div>
+//                                 {fieldErrors[index]?.total_score && (
+//                                     <p style={{ color: 'red' }}>{fieldErrors[index].total_score}</p>
+//                                 )}
+//                                 {Number(fields[index].total_score) > 100 && (
+//                                     <p style={{ color: 'red' }}>Please enter a value less than or equal to 100</p>
+//                                 )}
+//                             </div>
+
+//                             <button
+//                                 type="button"
+//                                 className="remove-btn"
+//                                 onClick={() => handleRemoveField(index)}
+//                                 style={{ marginLeft: '10px', fontSize: '10px' }}
+//                             >
+//                                 <ImCross className='cross' />
+//                             </button><br /><br />
+//                         </div>
+//                     ))}
+
+//                     <div className="total-score">
+//                         Total Score: <span style={{ color: '#3bcd51', fontSize: '20px' }}>{fields.reduce((sum, field) => sum + Number(field.total_score || 0), 0)}</span>%
+//                         <button type="button" className='add-btn' onClick={handleAddField}>+ Add KPI/Parameter</button>
+//                     </div>
+
+//                     <div className="form-footer">
+//                         <button type="submit"
+//                             className='cancel-btn'
+//                             onClick={() => {
+//                                 navigate('/')
+//                             }}>
+//                             Cancel
+//                         </button>
+//                         <button type="submit"
+//                             className='submit-btn'
+//                             disabled={fields.reduce((sum, field) => sum + Number(field.total_score || 0), 0) != 100}>
+//                             Update
+//                         </button>
+//                     </div>
+
+//                 </form>
+//             </div>
+//         </>
+//     );
+// };
+
+// export default EditForm;
+
+// // , copyData where i have to keep only sinle compo for all thses three when i go to route: /edit-paramter it shold go on form page and show the h2 tag with condition and same for copy data
+// // here in both this pages i have some diffrent reducers and function , im cofuse here how to mange them in form compo?
+
+// form.tsx code---------------
+
+// import React, { useState } from 'react'
+// import * as Yup from 'Yup'
+// import { Formik, useFormik } from 'formik';
+// import { useDispatch, useSelector } from 'react-redux';
+// import { addFormData } from '../formSlice';
+// import { RootState } from '../store';
+// import { ImCross } from "react-icons/im";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+// import { useNavigate } from 'react-router-dom';
+
+// const Form = () => {
+
+//     // const [value, setValue] = useState();
+//     const dispatch = useDispatch();
+//     const form = useSelector((state: RootState) => state.form.forms);
+//     const [fields, setFields] = useState([{ kpi_parameter: '', total_score: '' }]);
+
+//     // Kpi and totalscore fields errors hanlding
+//     const [fieldErrors, setFieldErrors] = useState<{ kpi_parameter: string; total_score: string }[]>(
+//         [{ kpi_parameter: '', total_score: '' }]
+//     );
+//     const navigate = useNavigate();
+
+//     const handleAddField = () => {
+//         setFields([...fields, { kpi_parameter: "", total_score: "" }]);
+//         setFieldErrors([...fieldErrors, { kpi_parameter: '', total_score: '' }]);
+//     };
+
+//     const handleRemoveField = (index: number) => {
+//         const updatedFields = [...fields];
+//         const updatedErrors = [...fieldErrors];
+//         if (updatedFields.length > 1) {
+//             updatedFields.splice(index, 1);
+//             updatedErrors.splice(index, 1);
+//         }
+//         setFields(updatedFields);
+//         setFieldErrors(updatedErrors);
+//     };
+
+//     const formik = useFormik({
+//         initialValues: {
+//             product_group: '',
+//         },
+//         validationSchema: Yup.object({
+//             product_group: Yup.string().required("please enter a value"),
+//         }),
+//         onSubmit: (values, { resetForm }) => {
+//             const newErrors = fields.map((field) => ({
+//                 kpi_parameter: field.kpi_parameter.trim() === '' ? 'Required' : '',
+//                 total_score: field.total_score.trim() === '' ? 'Required' : '',
+//             }));
+
+//             if (newErrors.some(err => err.kpi_parameter || err.total_score)) {
+//                 setFieldErrors(newErrors);
+//                 return;
+//             }
+//             dispatch(
+//                 addFormData({
+//                     ProductGroup: values.product_group,
+//                     Parameters: fields,
+//                     ParameterField: fields.length,
+//                 })
+//             );
+//             resetForm();
+//             setFields([{ kpi_parameter: '', total_score: '' }]);
+//             setFieldErrors([{ kpi_parameter: '', total_score: '' }]);
+//             toast.success("Data added Successfully...");
+//             setTimeout(() => {
+//                 navigate('/');
+//             }, 800);
+//         },
+//     });
+
+
+//     return (
+//         <>
+//             <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
+//             <div className='form-container'>
+//                 <h2 className="form-heading">Add Quality Check Settings</h2>
+//                 <form onSubmit={formik.handleSubmit}>
+//                     <div className="form-group">
+//                         <label>Product Group</label>
+//                         <input
+//                             type="text"
+//                             id="product_group"
+//                             name="product_group"
+//                             placeholder="Type here.."
+//                             onChange={formik.handleChange}
+//                             value={formik.values.product_group}
+//                         />
+//                         {formik.touched.product_group && formik.errors.product_group && (
+//                             <p style={{ color: 'red' }}>{formik.errors.product_group}</p>
+//                         )}
+//                     </div>
+
+//                     {/* <div className='second-row'> */}
+//                     {fields.map((item, index) => (
+//                         <div key={index} className="parameter-box">
+//                             <div className="form-group">
+//                                 <label>KPI/Parameter</label>
+//                                 <input
+//                                     type="text"
+//                                     value={item.kpi_parameter}
+//                                     placeholder="Type here.."
+//                                     maxLength={20}
+//                                     onChange={(e) => {
+//                                         const updated = [...fields];
+//                                         updated[index].kpi_parameter = e.target.value;
+//                                         setFields(updated);
+//                                         const errorUpdate = [...fieldErrors];
+//                                         errorUpdate[index].kpi_parameter = '';
+//                                         setFieldErrors(errorUpdate);
+//                                     }}
+//                                 />
+//                                 {fieldErrors[index]?.kpi_parameter && (
+//                                     <p style={{ color: 'red' }}>{fieldErrors[index].kpi_parameter}</p>
+//                                 )}
+//                             </div>
+
+//                             <div className="form-group score-input">
+//                                 <label>Total Score</label>
+//                                 <div className="score-wrapper">
+//                                     <input
+//                                         type="text"
+//                                         value={item.total_score}
+//                                         placeholder='0'
+//                                         maxLength={3}
+//                                         onChange={(e) => {
+//                                             const value = e.target.value;
+//                                             if (/^\d*$/.test(value)) {
+//                                                 const updated = [...fields];
+//                                                 updated[index].total_score = e.target.value;
+//                                                 setFields(updated);
+//                                                 const errorUpdate = [...fieldErrors];
+//                                                 errorUpdate[index].total_score = '';
+//                                                 setFieldErrors(errorUpdate);
+//                                             }
+//                                         }}
+//                                     />
+//                                     <span>%</span>
+//                                 </div>
+//                                 {fieldErrors[index]?.total_score && (
+//                                     <p style={{ color: 'red' }}>{fieldErrors[index].total_score}</p>
+//                                 )}
+//                                 {Number(fields[index].total_score) > 100 && (
+//                                     <p style={{ color: 'red' }}>Please enter a value less than or equal to 100</p>
+//                                 )}
+//                             </div>
+
+//                             <button
+//                                 type="button"
+//                                 className="remove-btn"
+//                                 onClick={() => handleRemoveField(index)}
+//                                 style={{ marginLeft: '10px', fontSize: '10px' }}
+//                             >
+//                                 <ImCross />
+//                             </button><br /><br />
+//                         </div>
+//                     ))}
+
+//                     <div className="total-score">
+//                         Total Score: <span style={{ color: '#ea1111', fontSize: '20px' }}>{fields.reduce((sum, field) => sum + Number(field.total_score || 0), 0)}</span>%<br />
+//                         <button type="button" className='add-btn' onClick={handleAddField}>+ Add KPI/Parameter</button>
+//                     </div>
+
+//                     <br /><br />
+
+//                     <div className="form-footer">
+//                         <button type="submit"
+//                             className='cancel-btn'
+//                             onClick={() => {
+//                                 navigate('/')
+//                             }}>
+//                             Cancel
+//                         </button>
+//                         <button type="submit"
+//                             className='submit-btn'
+//                             disabled={fields.reduce((sum, field) => sum + Number(field.total_score || 0), 0) != 100}>
+//                             Submit
+//                         </button>
+//                     </div>
+//                 </form>
+//             </div>
+//         </>
+//     )
+// }
+
+// export default Form
