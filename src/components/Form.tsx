@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import { useDispatch } from 'react-redux';
-import { addFormData, editFormData } from '../formSlice';
+// import { addFormData, editFormData } from '../formSlice';
+import { handleFormAction } from '../formSlice';
 import { ImCross } from "react-icons/im";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +18,7 @@ const Form = () => {
     const [fields, setFields] = useState([{ kpi_parameter: '', total_score: '' }]);
     const [fieldErrors, setFieldErrors] = useState([{ kpi_parameter: '', total_score: '' }]);
     const [initialProductGroup, setInitialProductGroup] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
 
     //* Detecting mode for: edit or copy or add
     useEffect(() => {
@@ -29,13 +31,15 @@ const Form = () => {
             setFields(parsed.data.Parameters);
             setEditIndex(parsed.index);
             setMode('edit');
-            localStorage.removeItem('editFormData');
+            // setIsCopied(!!parsed.data?.Copied);
+            // localStorage.removeItem('editFormData');
         } else if (copyData) {
             const parsed = JSON.parse(copyData);
             setInitialProductGroup(parsed.data.ProductGroup);
             setFields(parsed.data.Parameters);
+            setEditIndex(parsed.index);
             setMode('copy');
-            localStorage.removeItem('savedData');
+            // localStorage.removeItem('savedData');
         }
     }, []);
 
@@ -63,7 +67,7 @@ const Form = () => {
         if (updatedFields.length > 1) {
             updatedFields.splice(index, 1);
             updatedErrors.splice(index, 1);
-        }else{
+        } else {
             toast.error('cannot remove last field!');
         }
         setFields(updatedFields);
@@ -105,40 +109,55 @@ const Form = () => {
                 return;
             }
 
+            const editData = localStorage.getItem('editFormData');
+            console.log("Raw editData from localStorage:", editData);
+            let Originalcopied = false;
+
+            if (editData) {
+                try {
+                    const parsed = JSON.parse(editData);
+                    console.log("Editing copied Data--------------:", parsed);
+                    Originalcopied = !!parsed.data?.Copied;
+                } catch (err) {
+                    console.error("Error parsing edit data", err);
+                }
+            }
+
             const payload = {
                 ProductGroup: values.product_group,
                 Parameters: fields,
                 ParameterField: fields.length,
+                Copied: Originalcopied,
             };
 
-            if (mode === 'edit' && editIndex !== null) {
-                dispatch(editFormData({ index: editIndex, updatedData: payload }));
+            const action: FormActionPayload =
+                mode === 'edit' && editIndex !== null
+                    ? { type: 'edit', index: editIndex, data: { ...payload } }
+                    : { type: mode, data: { ...payload } };
+
+            dispatch(handleFormAction(action));
+            console.log("Dispatching Action:", action);
+
+            if (mode === 'edit') {
                 toast.warning("Data updated successfully!");
+            } else if (mode === 'copy') {
+                toast.info("Copy of data created!");
             } else {
-                dispatch(addFormData({ ...payload, Copied: mode === 'copy' }));
-                if (mode === 'copy') {
-                    toast.info("Copy of data created!");
-                } else {
-                    toast.success("Data added successfully!");
-                }
+                toast.success("Data added successfully!");
             }
+
             resetForm();
             setFields([{ kpi_parameter: '', total_score: '' }]);
             setFieldErrors([{ kpi_parameter: '', total_score: '' }]);
             setInitialProductGroup('');
-            setTimeout(() => {
-                navigate('/')
-            }, 800);
+            navigate('/');
         },
     });
 
     return (
         <>
-            <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
             <div className='form-container'>
-                <h2 className="form-heading">
-                    {mode === 'edit' ? 'Edit Quality Check Settings' : mode === 'copy' ? 'Copy Quality Check Settings' : 'Add Quality Check Settings'}
-                </h2>
+                <h2 style={{ color: 'black' }}>{mode && `${mode.charAt(0).toUpperCase() + mode.slice(1)} Quality Check Setting`}</h2>
                 <form onSubmit={formik.handleSubmit}>
                     <div className="form-group">
                         <label>Product Group</label>
@@ -148,10 +167,14 @@ const Form = () => {
                             name="product_group"
                             placeholder="Type here.."
                             onChange={(e) => {
-                                formik.setFieldValue("product_group", e.target.value.trim());
+                                formik.setFieldValue("product_group", e.target.value.trimStart());
                             }}
                             value={formik.values.product_group}
+                            style={{ color:'#333',paddingRight: mode === 'edit' ? '60px' : '(copy)' }}
                         />
+                        {/* {mode === "edit" && (
+                            <span style={{color:'#333'}}>(copy)</span>        
+                        )} */}
                         {formik.touched.product_group && formik.errors.product_group && (
                             <p style={{ color: 'red' }}>{formik.errors.product_group}</p>
                         )}
@@ -167,11 +190,11 @@ const Form = () => {
                                     placeholder="Type here.."
                                     maxLength={20}
                                     onChange={(e) => handleFieldChange(index, 'kpi_parameter', e.target.value)}
-                                    className={fieldErrors[index]?.kpi_parameter ? 'input-error' : ''}
+                                // className={fieldErrors[index]?.kpi_parameter ? 'input-error' : ''}
                                 />
-                                {/* {fieldErrors[index]?.kpi_parameter && (
+                                {fieldErrors[index]?.kpi_parameter && (
                                     <p style={{ color: 'red' }}>{fieldErrors[index].kpi_parameter}</p>
-                                )} */}
+                                )}
                             </div>
 
                             <div className="form-group score-input">
@@ -196,7 +219,7 @@ const Form = () => {
                                     <p style={{ color: 'red' }}>{fieldErrors[index].total_score}</p>
                                 )} */}
                                 {Number(fields[index].total_score) > 100 && (
-                                    <p style={{ color: 'red' }}>Please enter less than 100</p>
+                                    <p style={{ color: 'red' }}>Please enter value less than or equal to 100</p>
                                 )}
                             </div>
 
@@ -243,36 +266,3 @@ const Form = () => {
 };
 
 export default Form;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

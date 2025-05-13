@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+// making single reducer for all-----------------------------------
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface Parameter {
     kpi_parameter: string | number;
@@ -12,43 +13,57 @@ interface formData {
     Copied?: boolean;
 }
 
-interface Formstate {
+interface FormState {
     forms: formData[];
 }
 
-const initialState: Formstate = {
+const initialState: FormState = {
     forms: [],
 };
+
+type FormActionPayload =
+    | { type: 'add'; data: formData }
+    | { type: 'edit'; index: number; data: formData }
+    | { type: 'copy'; data: formData; Copied: true };
 
 export const formSlice = createSlice({
     name: 'forms',
     initialState,
     reducers: {
-        addFormData: (state, action: PayloadAction<formData>) => {
-            state.forms.push(action.payload);
-        },
-        updateFormData: (state, action: PayloadAction<{ index: number; data: formData }>) => {
-            const { index, data } = action.payload;
-            if (state.forms[index]) {
-                state.forms[index] = { ...state.forms[index], ...data };
+        handleFormAction: (state, action: PayloadAction<FormActionPayload>) => {
+            const { type } = action.payload;
+
+            switch (type) {
+                case 'add':
+                    state.forms.push(action.payload.data);
+                    break;
+
+                case 'edit':
+                    const editPayload = action.payload as { type: 'edit'; index: number; data: formData };
+                    if (state.forms[editPayload.index]) {
+                        state.forms[editPayload.index] = { ...editPayload.data };
+                    }
+                    break;
+
+                case 'copy':
+                    state.forms.push({ ...action.payload.data, Copied: true });
+                    break;
+
+                default:
+                    break;
             }
         },
-        editFormData: (state, action) => {
-            const { index, updatedData } = action.payload;
-            state.forms[index] = updatedData;
-        },
-        copyFormData: (state, action: PayloadAction<formData>) => {
-            state.forms.push(action.payload);
-        },
-        deleteRow: (state, action) => {
+
+        deleteRow: (state, action: PayloadAction<number>) => {
             state.forms.splice(action.payload, 1);
         },
+
         clearData: (state) => {
             localStorage.clear();
             state.forms = [];
-        }
-    }
+        },
+    },
 });
 
-export const { addFormData, updateFormData, copyFormData,editFormData, clearData, deleteRow } = formSlice.actions;
+export const { handleFormAction, deleteRow, clearData } = formSlice.actions;
 export default formSlice.reducer;

@@ -15,6 +15,7 @@ const DisplayData = () => {
 
     const handleDeleteRow = (index: number) => {
         dispatch(deleteRow(index));
+        toast.warning('Item Deleted!')
     };
 
     return (
@@ -60,13 +61,17 @@ const DisplayData = () => {
                                             /> */}
                                             <FaPencilAlt
                                                 onClick={() => {
+                                                    // console.log("Editing data:", data);
+                                                    console.log("Saving editFormData:", { data, index });
                                                     localStorage.setItem('editFormData', JSON.stringify({ data, index }));
+                                                    console.log("After setItem:", localStorage.getItem('editFormData'));
                                                     navigate('/edit-parameter');
                                                 }}
                                             />
                                             <FaCopy
                                                 onClick={() => {
-                                                    localStorage.setItem('savedData', JSON.stringify({ data, index }));
+                                                    const copyData = { ...data, Copied: true };
+                                                    localStorage.setItem('savedData', JSON.stringify({ data: copyData, index }));
                                                     navigate('/copy-parameter');
                                                 }}
                                             />

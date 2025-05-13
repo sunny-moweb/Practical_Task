@@ -5,6 +5,7 @@ import { Provider } from 'react-redux'
 import { persistor, store } from './store'
 import { PersistGate } from 'redux-persist/integration/react'
 import { Routes, Route, BrowserRouter } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
 // import EditData from './components/EditData'
 // import CopyData from './components/CopyData'
 
@@ -12,19 +13,20 @@ function App() {
 
   return (
     <>
-    <BrowserRouter>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          {/* <DisplayData /> */}
-          <Routes>
-            <Route path='/' element={<DisplayData/>}></Route>
-            <Route path='/add-parameter' element={<Form/>}></Route>
-            <Route path='/edit-parameter' element={<Form/>}></Route>
-            <Route path='/copy-parameter' element={<Form/>}></Route>
-          </Routes>
-          {/* <Form /> */}
-        </PersistGate>
-      </Provider>
+      <BrowserRouter>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            {/* <DisplayData /> */}
+            <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
+            <Routes>
+              <Route path='/' element={<DisplayData />}></Route>
+              <Route path='/add-parameter' element={<Form />}></Route>
+              <Route path='/edit-parameter' element={<Form />}></Route>
+              <Route path='/copy-parameter' element={<Form />}></Route>
+            </Routes>
+            {/* <Form /> */}
+          </PersistGate>
+        </Provider>
       </BrowserRouter>
     </>
   )
